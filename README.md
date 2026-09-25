@@ -34,12 +34,12 @@ report and how to act on each finding.*
 
 ## Why
 
-Hospitals, and organisations generally, leak data in places nobody is watching:
+organisations generally, leak data in places nobody is watching:
 credentials in public code, files on misconfigured buckets, look-alike phishing
 domains, forgotten internet-facing apps, and dumps on paste/leak/dark-web sites.
 `pandora` gives a small team a repeatable way to *find their own exposure
 first* — and produces a dated report trail that supports breach-detection and
-notification duties (e.g. India's **DPDPA**).
+notification duties.
 
 ## What it does
 
@@ -100,11 +100,12 @@ cp config.example.yaml config.yaml
 Edit `config.yaml` — the only file you need to change:
 
 ```yaml
-org_name: "Example Hospital"
+org_name: "lexcorp"
 domains:
-  - "example.com"        # your REAL public domain (not an internal .local)
+  - "lexcorp.dc"        # your REAL public domain (not an internal .local)
 keywords:
-  - "Example Hospital"
+  - "lock heed martin"
+  - "palantir"
 ```
 
 - Use your **public** domain(s); crt.sh discovers subdomains for you.
@@ -127,6 +128,8 @@ Key reference:
 | `hibp_key` | hibp | subscription |
 | `leakcheck_key` | leakcheck | paid |
 | `intelx_key` | intelx | paid |
+| `leakcheckio_key` | leakcheck_io | free
+| `dehashed_key` | dehashed | free tier
 
 ## Usage
 
@@ -167,7 +170,7 @@ Example console summary:
 ```
 === breach hunt [surface] : 2 new / 37 total ===
   [HIGH    ] (github)   acme/backup/db.env  -> https://github.com/acme/backup/...
-  [HIGH    ] (dnstwist) Look-alike domain registered: examp1e-hospital.com
+  [HIGH    ] (dnstwist) Look-alike domain registered: examp1e-lexcorp.com
 ```
 
 ## Extending
