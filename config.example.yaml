@@ -27,7 +27,10 @@ report_dir: "reports"     # markdown + json reports written here
 #   `pip install dnstwist`  or, on Kali/Debian, `apt install dnstwist`.
 #   Auto-skips if the binary isn't found.
 shodan_key: ""            # Shodan (surface). Finds internet-exposed hosts/panels/DBs/shadow-IT apps.
-serpapi_key: ""           # SerpAPI (surface search dorks). Or adapt to Brave/Google CSE.
+brave_key: ""             # Brave Search API (surface leak dorks). Prepaid; ~$5 free credit/month.
+google_api_key: ""        # Google Programmable Search (surface leak dorks). FREE 100 queries/day, NO card.
+google_cse_cx: ""         # Google CSE "Search engine ID" (cx), set to search the entire web.
+serpapi_key: ""           # SerpAPI (surface search dorks) — paid alternative.
 github_token: ""          # GitHub PAT (surface code search)
 hibp_key: ""              # Have I Been Pwned (surface; needs domain verification)
 leakcheck_key: ""         # LeakCheck.io (surface credential leaks); DeHashed is a swap
