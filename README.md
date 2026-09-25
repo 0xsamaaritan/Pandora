@@ -92,11 +92,12 @@ cp config.example.yaml config.yaml
 Edit `config.yaml` — the only file you need to change:
 
 ```yaml
-org_name: "Example Hospital"
+org_name: "lexcorp"
 domains:
-  - "example.com"        # your REAL public domain (not an internal .local)
+  - "lexcorp.dc"        # your REAL public domain (not an internal .local)
 keywords:
-  - "Example Hospital"
+  - "lock heed martin"
+  - "palantir"
 ```
 
 - Use your **public** domain(s); crt.sh discovers subdomains for you.
