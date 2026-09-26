@@ -4,12 +4,12 @@
 # =====================================================================
 
 # --- what you are hunting for ---------------------------------------
-org_name: "Arkham Asylum"      # exact org name, in quotes
+org_name: "Arkham Asylum Hospital"      # exact org name, in quotes
 domains:                                 # your email / web domains
-  - "lexcorp.dc"
+  - "arkhamasylum.example"
 keywords:                                # optional extra strings
   - "Arkham Asylum"
-  - "lex corp"
+  - "AAH"
 
 # Optional: sites to focus dork queries on (surface mode, needs serpapi_key).
 # dork_sites:
@@ -45,7 +45,7 @@ intelx_base: "https://2.intelx.io"
 # --- optional alerting on NEW findings ------------------------------
 # webhook_url: "https://hooks.slack.com/services/XXX/YYY/ZZZ"   # or Teams/Discord/Mattermost
 # smtp:
-#   host: "smtp.lexcorp.dc"
+#   host: "smtp.yourhospital.example"
 #   port: 587
 #   starttls: true
 #   user: "alerts@arkhamasylum.example"
