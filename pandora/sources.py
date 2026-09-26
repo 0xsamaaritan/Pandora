@@ -513,3 +513,67 @@ def dnstwist(cfg: dict) -> list[Finding]:
         except Exception as e:  # noqa: BLE001
             log.warning("dnstwist failed for %s: %s", dom, e)
     return out
+
+
+@source("gitleaks", modes=("surface",), key_of=None)
+def gitleaks(cfg: dict) -> list[Finding]:
+    """Confirm whether a repository actually contains live secrets, using gitleaks.
+
+    A GitHub code-search hit tells you your name appears in a repo; gitleaks tells
+    you whether that repo contains real secrets (keys, tokens, DB strings) — in
+    current files AND in past commit history. List the repos to check under
+    `gitleaks_repos` in config (e.g. your own org repos, or one flagged by the
+    github source). Free, but needs the gitleaks CLI: https://github.com/gitleaks/gitleaks
+
+    The secret VALUE is never stored or reported — only its type and location.
+    Note: this shallow-clones each listed repo to a temp dir to scan it.
+    """
+    import json as _json
+    import shutil
+    import subprocess
+    import tempfile
+
+    if shutil.which("gitleaks") is None:
+        log.info("gitleaks not installed; skip (see github.com/gitleaks/gitleaks)")
+        return []
+    repos = cfg.get("gitleaks_repos", [])
+    if not repos:
+        return []
+    if shutil.which("git") is None:
+        log.warning("gitleaks: 'git' not found; cannot clone repos to scan")
+        return []
+
+    out: list[Finding] = []
+    for url in repos:
+        tmp = tempfile.mkdtemp(prefix="pandora_gl_")
+        report = tmp + "/report.json"
+        try:
+            # full history clone so gitleaks can scan past commits (where secrets hide)
+            c = subprocess.run(["git", "clone", "--quiet", url, tmp + "/repo"],
+                               capture_output=True, text=True, timeout=600)
+            if c.returncode != 0:
+                log.warning("gitleaks: clone failed for %s: %s", url, c.stderr.strip()[:200])
+                continue
+            subprocess.run(
+                ["gitleaks", "detect", "--source", tmp + "/repo", "--no-banner",
+                 "--report-format", "json", "--report-path", report],
+                capture_output=True, text=True, timeout=900)
+            import os as _os
+            if not _os.path.exists(report):
+                continue
+            for rec in _json.load(open(report, encoding="utf-8")):
+                # store type + location only — never the secret value / match text
+                out.append(Finding(
+                    source="gitleaks", mode="surface",
+                    title=f"Confirmed secret ({rec.get('RuleID','?')}) in {url}",
+                    url=url,
+                    snippet=f"file={rec.get('File','?')} line={rec.get('StartLine','?')} "
+                            f"commit={str(rec.get('Commit',''))[:10]} — {rec.get('Description','')[:120]}",
+                    matched_terms=[url], severity="critical",
+                    raw={"rule": rec.get("RuleID"), "file": rec.get("File"),
+                         "line": rec.get("StartLine"), "commit": rec.get("Commit")}))
+        except Exception as e:  # noqa: BLE001
+            log.warning("gitleaks failed for %s: %s", url, e)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+    return out
