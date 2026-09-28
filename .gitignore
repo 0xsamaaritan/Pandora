@@ -1,0 +1,19 @@
+# secrets & local state — NEVER commit these
+config.yaml
+.env
+state/
+reports/
+logs/
+
+# python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# editors / OS
+.vscode/
+.idea/
+.DS_Store

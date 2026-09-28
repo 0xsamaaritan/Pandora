@@ -1,0 +1,46 @@
+# =====================================================================
+# pandora config — copy to config.yaml and fill in.
+# Scope this ONLY to your own organisation's identifiers.
+# =====================================================================
+
+# --- what you are hunting for ---------------------------------------
+org_name: "Arkham Asylum Hospital"      # exact org name, in quotes
+domains:                                 # your email / web domains
+  - "arkhamasylum.example"
+keywords:                                # optional extra strings
+  - "Arkham Asylum"
+  - "AAH"
+
+# Optional: sites to focus dork queries on (surface mode, needs serpapi_key).
+# dork_sites:
+#   - pastebin.com
+#   - s3.amazonaws.com
+#   - trello.com
+
+# --- where output goes ----------------------------------------------
+state_dir: "state"        # dedupe state (per mode) lives here
+report_dir: "reports"     # markdown + json reports written here
+
+# --- API keys (fill the ones you have; blanks are skipped) ----------
+# FREE, no key needed: crtsh (surface), ahmia (dark).
+# FREE but needs the CLI installed: dnstwist (surface look-alike domains) ->
+#   `pip install dnstwist`  or, on Kali/Debian, `apt install dnstwist`.
+#   Auto-skips if the binary isn't found.
+shodan_key: ""            # Shodan (surface). Finds internet-exposed hosts/panels/DBs/shadow-IT apps.
+serpapi_key: ""           # SerpAPI (surface search dorks). Or adapt to Brave/Google CSE.
+github_token: ""          # GitHub PAT (surface code search)
+hibp_key: ""              # Have I Been Pwned (surface; needs domain verification)
+leakcheck_key: ""         # LeakCheck.io (surface credential leaks); DeHashed is a swap
+intelx_key: ""            # Intelligence X (surface + dark). Best single dark-web source for a buyer.
+intelx_base: "https://2.intelx.io"
+
+# --- optional alerting on NEW findings ------------------------------
+# webhook_url: "https://hooks.slack.com/services/XXX/YYY/ZZZ"   # or Teams/Discord/Mattermost
+# smtp:
+#   host: "smtp.yourhospital.example"
+#   port: 587
+#   starttls: true
+#   user: "alerts@arkhamasylum.example"
+#   password: ""          # prefer an env-injected value / app password
+#   from: "alerts@arkhamasylum.example"
+#   to: "soc@arkhamasylum.example"
