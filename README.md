@@ -160,7 +160,7 @@ Example console summary:
 ```
 === breach hunt [surface] : 2 new / 37 total ===
   [HIGH    ] (github)   acme/backup/db.env  -> https://github.com/acme/backup/...
-  [HIGH    ] (dnstwist) Look-alike domain registered: examp1e-hospital.com
+  [HIGH    ] (dnstwist) Look-alike domain registered: examp1e-lexcorp.com
 ```
 
 ## Extending
