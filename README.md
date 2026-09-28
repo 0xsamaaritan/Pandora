@@ -48,7 +48,7 @@ Two run modes, each hitting a different set of sources:
 | Mode | Sources |
 |------|---------|
 | `surface` | **crt.sh** (assets/subdomains), **Shodan** (exposed hosts/services), **dnstwist** (look-alike domains), **GitHub** code search, search dorks (**Brave** / **Google CSE** / SerpAPI), **Have I Been Pwned**, **LeakCheck/DeHashed**, **Intelligence X** |
-| `dark` | **Ahmia** (Tor index), **Intelligence X** (dark/breach buckets) |
+| `dark` | **Ahmia** (Tor index), **psbdmp** (paste dumps), **Intelligence X** (dark/breach buckets) |
 
 - **Only-new reporting** — persistent state means a repeat finding is tracked
   silently; a brand-new one is what surfaces and alerts.

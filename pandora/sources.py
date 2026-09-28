@@ -577,3 +577,38 @@ def gitleaks(cfg: dict) -> list[Finding]:
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
     return out
+
+
+@source("psbdmp", modes=("dark",), key_of=None)
+def psbdmp(cfg: dict) -> list[Finding]:
+    """psbdmp.ws — a searchable archive of Pastebin dumps (leaked lists, creds, configs).
+
+    Free, no key. Gives dark mode real signal beyond the onion index: paste dumps
+    are where a lot of leaked data actually surfaces. Matches on your org name,
+    domains, and keywords. (The service can be intermittently slow/offline; the
+    source fails soft if so.)
+    """
+    from urllib.parse import quote
+
+    out: list[Finding] = []
+    sess = _http()
+    for term in _terms(cfg):
+        try:
+            r = sess.get(f"https://psbdmp.ws/api/v3/search/{quote(term)}",
+                         timeout=UA_TIMEOUT)
+            r.raise_for_status()
+            for rec in r.json().get("data", []):
+                pid = rec.get("id")
+                if not pid:
+                    continue
+                out.append(Finding(
+                    source="psbdmp", mode="dark",
+                    title=f"Paste dump mentioning '{term}' ({pid})",
+                    url=f"https://psbdmp.ws/{pid}",
+                    snippet=f"date={rec.get('time', '?')} tags={rec.get('tags', '') or 'n/a'}",
+                    matched_terms=[term], severity="high",
+                    raw={"id": pid, "time": rec.get("time")}))
+        except Exception as e:  # noqa: BLE001
+            log.warning("psbdmp failed (%s): %s", term, e)
+        time.sleep(1.5)
+    return out
