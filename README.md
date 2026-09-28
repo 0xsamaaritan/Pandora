@@ -143,7 +143,7 @@ Run surface and dark in two terminals to watch both at once.
 
 ### Customising search dorks
 
-The leak-focused search queries are grouped into categories (`paste`, `cloud`, `docs`, `code`, `credentials`, `files`, `general`). See exactly what will run for your config — with `{org}`/`{domain}`/`{keyword}` filled in — without spending any quota:
+The leak-focused search queries are grouped into categories (`paste`, `cloud`, `docs`, `documents`, `code`, `credentials`, `files`, `third_party`, `general`). See exactly what will run for your config — with `{org}`/`{domain}`/`{keyword}` filled in — without spending any quota:
 
 ```bash
 python -m pandora --config config.yaml --list-dorks

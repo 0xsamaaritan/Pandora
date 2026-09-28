@@ -101,8 +101,14 @@ DEFAULT_DORKS: dict[str, list[str]] = {
         'site:pastebin.com "{domain}"',
     ],
     "cloud": [
-        'site:s3.amazonaws.com "{org}"', 'site:blob.core.windows.net "{org}"',
-        'site:storage.googleapis.com "{org}"', 'site:s3.amazonaws.com "{domain}"',
+        'site:s3.amazonaws.com "{org}"', 'site:s3.amazonaws.com "{domain}"',
+        'site:blob.core.windows.net "{org}"',
+        'site:storage.googleapis.com "{org}"',
+        'site:digitaloceanspaces.com "{org}"',
+        'site:r2.dev "{org}"',
+        'site:firebaseio.com "{org}"', 'site:firebaseapp.com "{org}"',
+        'intitle:"index of" "{org}"',
+        'intitle:"index of" (backup OR db OR sql OR dump) "{domain}"',
     ],
     "docs": [
         'site:docs.google.com "{org}"', 'site:scribd.com "{org}"',
@@ -119,6 +125,22 @@ DEFAULT_DORKS: dict[str, list[str]] = {
     "files": [
         'intext:"{org}" (filetype:xlsx OR filetype:csv OR filetype:sql)',
         'intext:"{domain}" (filetype:pdf OR filetype:xlsx OR filetype:bak)',
+    ],
+    "documents": [
+        'filetype:pdf intext:"{org}" (confidential OR report OR patient)',
+        'filetype:xlsx intext:"{org}"',
+        'filetype:csv intext:"{org}"',
+        'filetype:docx intext:"{org}"',
+        'filetype:pdf intext:"{domain}"',
+        'intitle:"index of" (pdf OR xlsx OR docx OR csv) "{domain}"',
+    ],
+    "third_party": [
+        'site:trello.com "{org}"',
+        'site:atlassian.net "{org}"',
+        'site:notion.site "{org}"',
+        'site:*.sharepoint.com "{org}"',
+        'site:jira.com "{org}"',
+        'site:docs.google.com "{domain}"',
     ],
 }
 
