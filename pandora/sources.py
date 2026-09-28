@@ -90,30 +90,113 @@ def crtsh(cfg: dict) -> list[Finding]:
     return out
 
 
-def _dork_queries(cfg: dict) -> list[str]:
-    """Leak-focused search queries shared by every search-engine source.
+# Built-in dork library, grouped by category. Templates use {org}, {domain} and
+# {keyword} placeholders, expanded from your config. Override or extend any
+# category in config.yaml under `dorks:`. See categories with `--list-dorks`.
+DEFAULT_DORKS: dict[str, list[str]] = {
+    "general": ['"{org}"', '"{domain}"', '"{keyword}"'],
+    "paste": [
+        'site:pastebin.com "{org}"', 'site:ghostbin.com "{org}"',
+        'site:throwbin.io "{org}"', 'site:controlc.com "{org}"',
+        'site:pastebin.com "{domain}"',
+    ],
+    "cloud": [
+        'site:s3.amazonaws.com "{org}"', 'site:blob.core.windows.net "{org}"',
+        'site:storage.googleapis.com "{org}"', 'site:s3.amazonaws.com "{domain}"',
+    ],
+    "docs": [
+        'site:docs.google.com "{org}"', 'site:scribd.com "{org}"',
+        'site:trello.com "{org}"',
+    ],
+    "code": [
+        'site:github.com "{domain}"', 'site:gitlab.com "{domain}"',
+        '"{domain}" (filename:.env OR filename:config OR extension:sql)',
+    ],
+    "credentials": [
+        '"{domain}" (password OR passwd OR credentials OR login)',
+        '"@{domain}" password',
+    ],
+    "files": [
+        'intext:"{org}" (filetype:xlsx OR filetype:csv OR filetype:sql)',
+        'intext:"{domain}" (filetype:pdf OR filetype:xlsx OR filetype:bak)',
+    ],
+}
 
-    Targets paste sites, public cloud buckets, doc-sharing, and looks for your
-    domain next to credential words or in data-file types.
-    """
-    org = cfg.get("org_name", "")
+
+def dork_categories(cfg: dict) -> dict[str, list[str]]:
+    """Merge built-in dork categories with any user-defined ones in config."""
+    merged = {k: list(v) for k, v in DEFAULT_DORKS.items()}
+    for name, templates in (cfg.get("dorks") or {}).items():
+        merged[name] = list(templates)  # user config overrides / adds
+    return merged
+
+
+def _expand_template(tpl: str, cfg: dict) -> list[str]:
+    """Fill {org}/{domain}/{keyword} in one template, over all configured values."""
+    orgs = [cfg["org_name"]] if cfg.get("org_name") else []
     domains = cfg.get("domains", [])
-    dork_targets = cfg.get("dork_sites", [
-        "pastebin.com", "ghostbin.com", "throwbin.io", "controlc.com",
-        "trello.com", "s3.amazonaws.com", "blob.core.windows.net",
-        "storage.googleapis.com", "docs.google.com", "scribd.com",
-        "anonfiles.com", "mega.nz",
-    ])
-    queries: list[str] = []
-    if org:
-        queries.append(f'"{org}"')
-        for site in dork_targets:
-            queries.append(f'site:{site} "{org}"')
-    for dom in domains:
-        queries.append(f'"{dom}"')
-        queries.append(f'"@{dom}" (password OR passwd OR login OR credentials)')
-        queries.append(f'intext:"{dom}" (filetype:xlsx OR filetype:csv OR filetype:sql)')
-    return queries
+    keywords = cfg.get("keywords", [])
+    axes = []
+    if "{org}" in tpl:
+        axes.append(("{org}", orgs))
+    if "{domain}" in tpl:
+        axes.append(("{domain}", domains))
+    if "{keyword}" in tpl:
+        axes.append(("{keyword}", keywords))
+    if not axes:
+        return [tpl]
+    results = [tpl]
+    for token, values in axes:
+        if not values:            # token used but nothing configured -> drop template
+            return []
+        nxt = []
+        for partial in results:
+            for val in values:
+                nxt.append(partial.replace(token, val))
+        results = nxt
+    return results
+
+
+def build_dorks(cfg: dict, category: str = "all") -> list[str]:
+    """Return the expanded, de-duplicated dork queries for the selected category.
+
+    Honours quota caps to protect free-tier limits (Google 100/day, Brave credit):
+      - cfg['dork_caps'][<category>]  -> max queries kept from that category
+      - cfg['max_queries_per_run'] or cfg['_max_queries'] -> hard cap on the total
+    """
+    cats = dork_categories(cfg)
+    caps = cfg.get("dork_caps") or {}
+    if category != "all" and category not in cats:
+        log.warning("unknown dork category '%s'; using 'all'. Known: %s",
+                    category, ", ".join(sorted(cats)))
+        category = "all"
+    chosen = cats if category == "all" else {category: cats[category]}
+    seen, out = set(), []
+    for name, templates in chosen.items():
+        cat_q = []
+        for tpl in templates:
+            for q in _expand_template(tpl, cfg):
+                if q not in seen:
+                    seen.add(q)
+                    cat_q.append(q)
+        cap = caps.get(name)
+        if isinstance(cap, int) and cap >= 0 and len(cat_q) > cap:
+            log.info("dork cap: category '%s' trimmed %d -> %d queries",
+                     name, len(cat_q), cap)
+            cat_q = cat_q[:cap]
+        out.extend(cat_q)
+    gmax = cfg.get("_max_queries")
+    if gmax is None:
+        gmax = cfg.get("max_queries_per_run")
+    if isinstance(gmax, int) and gmax >= 0 and len(out) > gmax:
+        log.info("dork cap: total trimmed %d -> %d queries", len(out), gmax)
+        out = out[:gmax]
+    return out
+
+
+def _dork_queries(cfg: dict) -> list[str]:
+    """Queries for the search-engine sources, honouring the selected --dork category."""
+    return build_dorks(cfg, cfg.get("_dork", "all"))
 
 
 @source("search_brave", modes=("surface",), key_of="brave_key")

@@ -34,7 +34,7 @@ report and how to act on each finding.*
 
 ## Why
 
-organisations generally, leak data in places nobody is watching:
+Hospitals, and organisations generally, leak data in places nobody is watching:
 credentials in public code, files on misconfigured buckets, look-alike phishing
 domains, forgotten internet-facing apps, and dumps on paste/leak/dark-web sites.
 `pandora` gives a small team a repeatable way to *find their own exposure
@@ -100,13 +100,11 @@ cp config.example.yaml config.yaml
 Edit `config.yaml` — the only file you need to change:
 
 ```yaml
-org_name: "lexcorp"
+org_name: "Example Hospital"
 domains:
-  - "lexcorp.dc"        # your REAL public domain (not an internal .local)
+  - "example.com"        # your REAL public domain (not an internal .local)
 keywords:
-  - "lexcorp"
-  - "arkham"
-  - "xandar"
+  - "Example Hospital"
 ```
 
 - Use your **public** domain(s); crt.sh discovers subdomains for you.
@@ -141,7 +139,35 @@ python -m pandora --config config.yaml --mode dark -v
 python -m pandora --config config.yaml --mode surface --loop --interval 12
 ```
 
-Run surface and dark in two terminals to watch both at once. For hands-off
+Run surface and dark in two terminals to watch both at once.
+
+### Customising search dorks
+
+The leak-focused search queries are grouped into categories (`paste`, `cloud`, `docs`, `code`, `credentials`, `files`, `general`). See exactly what will run for your config — with `{org}`/`{domain}`/`{keyword}` filled in — without spending any quota:
+
+```bash
+python -m pandora --config config.yaml --list-dorks
+```
+
+Run a single category (saves free-tier quota), or all of them:
+
+```bash
+python -m pandora --config config.yaml --mode surface --dork credentials
+python -m pandora --config config.yaml --mode surface --dork all
+```
+
+Override a built-in category or add your own under `dorks:` in `config.yaml`.
+
+**Quota caps** protect free-tier limits (Google 100/day, Brave credit). Cap queries per category or overall in `config.yaml`:
+
+```yaml
+dork_caps:
+  general: 3
+  credentials: 2
+max_queries_per_run: 20
+```
+
+Or cap a single run from the CLI: `--max-queries 15`. `--list-dorks` shows the caps in effect. For hands-off
 scheduling instead of `--loop`, use cron / systemd timers / Windows Task
 Scheduler (examples below).
 
@@ -169,7 +195,7 @@ Example console summary:
 ```
 === breach hunt [surface] : 2 new / 37 total ===
   [HIGH    ] (github)   acme/backup/db.env  -> https://github.com/acme/backup/...
-  [HIGH    ] (dnstwist) Look-alike domain registered: lexcorp.dc
+  [HIGH    ] (dnstwist) Look-alike domain registered: examp1e-hospital.com
 ```
 
 ## Extending

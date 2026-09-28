@@ -11,11 +11,24 @@ keywords:                                # optional extra strings
   - "Arkham Asylum"
   - "AAH"
 
-# Optional: sites to focus dork queries on (surface mode, needs serpapi_key).
-# dork_sites:
-#   - pastebin.com
-#   - s3.amazonaws.com
-#   - trello.com
+# Search dorks are organised into CATEGORIES (paste, cloud, docs, code,
+# credentials, files, general). Run one with `--dork <category>` or all with
+# `--dork all` (default). See exactly what will run with:  --list-dorks
+# Templates support {org}, {domain}, {keyword}, filled from the values above.
+# Uncomment to override a built-in category or add your own:
+# dorks:
+#   credentials:
+#     - '"{domain}" (password OR passwd OR credentials OR login)'
+#     - '"@{domain}" filetype:env'
+#   my_custom:
+#     - 'site:trello.com "{org}"'
+
+# Quota controls (protect Google 100/day & Brave credit):
+# dork_caps:               # max queries kept per category per run
+#   general: 3
+#   credentials: 2
+# max_queries_per_run: 20  # hard cap on total dork queries per run
+#                          # (CLI --max-queries N overrides this)
 
 # --- where output goes ----------------------------------------------
 state_dir: "state"        # dedupe state (per mode) lives here
