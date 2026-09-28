@@ -31,7 +31,7 @@ credentials in public code, files on misconfigured buckets, look-alike phishing
 domains, forgotten internet-facing apps, and dumps on paste/leak/dark-web sites.
 `pandora` gives a small team a repeatable way to *find their own exposure
 first* — and produces a dated report trail that supports breach-detection and
-notification duties (e.g. India's **DPDPA**).
+notification duties.
 
 ## What it does
 
