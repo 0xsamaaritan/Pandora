@@ -187,9 +187,22 @@ Register the key in `config.example.yaml` and it appears automatically.
 
 - [x] Brave Search source (free alternative to SerpAPI dorks)
 - [x] gitleaks pass to confirm whether a code hit is a *live* secret
+- [ ] Telegram channel search (a major hub for leak & breach chatter)
+- [ ] Automated tests + CI
 - [ ] theHarvester + Amass asset-discovery sources
 - [ ] Commercial dark-web feed adapter (SpyCloud / Flare / Cybersixgill)
 - [ ] HTML dashboard for the latest snapshot
+
+## Contributing
+
+Pandora is open source and built for defenders. Try it, break it, and tell me
+what you'd add — bug reports, feature ideas, and pull requests are all welcome.
+Open an issue for anything, and if a source you rely on isn't here, the source
+model (see [Extending](#extending)) makes it easy to add. If the tool is useful
+to you, a ⭐ on the repo helps others find it.
+
+Please keep contributions aligned with the tool's purpose: **defensive,
+authorised monitoring of assets you own or are permitted to assess.**
 
 ## Responsible use
 

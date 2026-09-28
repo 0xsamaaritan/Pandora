@@ -2,7 +2,7 @@
 
 A sanitised sample of what Pandora writes to `reports/` after a run. The
 organisation, domains, hosts, and URLs below are fictional
-(`lexcorp` / `lexcorp.com`) — this is only to show the output format.
+(`Example Hospital` / `example.com`) — this is only to show the output format.
 
 Real runs write one of these per cycle as `reports/<mode>-<timestamp>.md`, plus
 a full JSON snapshot at `reports/<mode>-latest.json`.
@@ -16,9 +16,9 @@ a full JSON snapshot at `reports/<mode>-latest.json`.
 
 ## New findings
 
-### [HIGH] luthor-lexcorp.com (look-alike domain registered)
+### [HIGH] example-hospita1.com (look-alike domain registered)
 - source: `dnstwist`  |  matched: example.com
-- url: http://luthor-lexcorp.com.com
+- url: http://example-hospita1.com
 - context: technique=replacement resolves_to=203.0.113.44
 
 ### [HIGH] acme-infra/backups/prod.env
