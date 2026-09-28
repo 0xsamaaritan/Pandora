@@ -26,7 +26,7 @@ platforms do under the hood with larger private feeds.
 
 ## Why
 
-Hospitals, and organisations generally, leak data in places nobody is watching:
+organisations generally, leak data in places nobody is watching:
 credentials in public code, files on misconfigured buckets, look-alike phishing
 domains, forgotten internet-facing apps, and dumps on paste/leak/dark-web sites.
 `pandora` gives a small team a repeatable way to *find their own exposure
