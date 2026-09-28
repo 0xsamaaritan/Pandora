@@ -4,12 +4,12 @@
 # =====================================================================
 
 # --- what you are hunting for ---------------------------------------
-org_name: "Arkham Asylum Hospital"      # exact org name, in quotes
+org_name: "Arkham Asylum"      # exact org name, in quotes
 domains:                                 # your email / web domains
-  - "arkhamasylum.example"
+  - "lexcorp.dc"
 keywords:                                # optional extra strings
   - "Arkham Asylum"
-  - "AAH"
+  - "lex corp"
 
 # Optional: sites to focus dork queries on (surface mode, needs serpapi_key).
 # dork_sites:
@@ -20,6 +20,11 @@ keywords:                                # optional extra strings
 # --- where output goes ----------------------------------------------
 state_dir: "state"        # dedupe state (per mode) lives here
 report_dir: "reports"     # markdown + json reports written here
+
+# Repos to confirm for live secrets with gitleaks (free, needs gitleaks CLI + git).
+# List your own org repos, or any public repo the github source flagged.
+# gitleaks_repos:
+#   - "https://github.com/yourorg/yourrepo.git"
 
 # --- API keys (fill the ones you have; blanks are skipped) ----------
 # FREE, no key needed: crtsh (surface), ahmia (dark).
@@ -40,7 +45,7 @@ intelx_base: "https://2.intelx.io"
 # --- optional alerting on NEW findings ------------------------------
 # webhook_url: "https://hooks.slack.com/services/XXX/YYY/ZZZ"   # or Teams/Discord/Mattermost
 # smtp:
-#   host: "smtp.yourhospital.example"
+#   host: "smtp.lexcorp.dc"
 #   port: 587
 #   starttls: true
 #   user: "alerts@arkhamasylum.example"
