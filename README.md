@@ -118,6 +118,8 @@ Key reference:
 | `hibp_key` | hibp | subscription |
 | `leakcheck_key` | leakcheck | paid |
 | `intelx_key` | intelx | paid |
+| `leakcheckio_key` | leakcheck_io | free
+| `dehashed_key` | dehashed | free tier
 
 ## Usage
 
