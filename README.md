@@ -34,7 +34,7 @@ report and how to act on each finding.*
 
 ## Why
 
-Hospitals, and organisations generally, leak data in places nobody is watching:
+organisations generally, leak data in places nobody is watching:
 credentials in public code, files on misconfigured buckets, look-alike phishing
 domains, forgotten internet-facing apps, and dumps on paste/leak/dark-web sites.
 `pandora` gives a small team a repeatable way to *find their own exposure
@@ -100,11 +100,13 @@ cp config.example.yaml config.yaml
 Edit `config.yaml` — the only file you need to change:
 
 ```yaml
-org_name: "Example Hospital"
+org_name: "lexcorp"
 domains:
-  - "example.com"        # your REAL public domain (not an internal .local)
+  - "lexcorp.dc"        # your REAL public domain (not an internal .local)
 keywords:
-  - "Example Hospital"
+  - "lexcorp"
+  - "arkham"
+  - "xandar"
 ```
 
 - Use your **public** domain(s); crt.sh discovers subdomains for you.
@@ -167,7 +169,7 @@ Example console summary:
 ```
 === breach hunt [surface] : 2 new / 37 total ===
   [HIGH    ] (github)   acme/backup/db.env  -> https://github.com/acme/backup/...
-  [HIGH    ] (dnstwist) Look-alike domain registered: examp1e-hospital.com
+  [HIGH    ] (dnstwist) Look-alike domain registered: lexcorp.dc
 ```
 
 ## Extending
