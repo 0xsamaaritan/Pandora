@@ -17,6 +17,14 @@ platforms do under the hood with larger private feeds.
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
+## Demo
+
+![Pandora sample run](docs/pandora-demo.png)
+
+*Illustrative surface run — the startup banner followed by new findings across
+sources. See [docs/example-report.md](docs/example-report.md) for a full sample
+report and how to act on each finding.*
+
 > **Authorised, defensive use only.** Point this at identifiers for an
 > organisation you are authorised to protect. Findings are evidence to
 > **remediate** — leaked secrets should be **rotated/revoked** by their owner,
@@ -39,7 +47,7 @@ Two run modes, each hitting a different set of sources:
 
 | Mode | Sources |
 |------|---------|
-| `surface` | **crt.sh** (assets/subdomains), **Shodan** (exposed hosts/services), **dnstwist** (look-alike domains), **GitHub** code search, search dorks (SerpAPI), **Have I Been Pwned**, **LeakCheck/DeHashed**, **Intelligence X** |
+| `surface` | **crt.sh** (assets/subdomains), **Shodan** (exposed hosts/services), **dnstwist** (look-alike domains), **GitHub** code search, search dorks (**Brave** / **Google CSE** / SerpAPI), **Have I Been Pwned**, **LeakCheck/DeHashed**, **Intelligence X** |
 | `dark` | **Ahmia** (Tor index), **Intelligence X** (dark/breach buckets) |
 
 - **Only-new reporting** — persistent state means a repeat finding is tracked
@@ -113,6 +121,8 @@ Key reference:
 | *(CLI only)* | dnstwist | free |
 | `github_token` | github | free token |
 | `shodan_key` | shodan | cheap membership for search |
+| `brave_key` | search_brave | prepaid, ~$5 free credit/mo |
+| `google_api_key` + `google_cse_cx` | search_google_cse | free, 100/day, no card |
 | `serpapi_key` | search_dorks | free tier / paid |
 | `hibp_key` | hibp | subscription |
 | `leakcheck_key` | leakcheck | paid |
@@ -175,7 +185,7 @@ Register the key in `config.example.yaml` and it appears automatically.
 
 ## Roadmap
 
-- [ ] Brave Search source (free alternative to SerpAPI dorks)
+- [x] Brave Search source (free alternative to SerpAPI dorks)
 - [ ] gitleaks/trufflehog pass to confirm whether a code hit is a *live* secret
 - [ ] theHarvester + Amass asset-discovery sources
 - [ ] Commercial dark-web feed adapter (SpyCloud / Flare / Cybersixgill)

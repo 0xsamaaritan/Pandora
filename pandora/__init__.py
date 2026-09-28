@@ -9,4 +9,4 @@ terms of service and rate limits of every source. The tool does that by
 default (timeouts, polite delays, graceful skip when a source has no API key).
 """
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"

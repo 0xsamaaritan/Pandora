@@ -21,6 +21,7 @@ import time
 
 import yaml
 
+from .banner import print_banner
 from .report import console_summary, notify, write_reports
 from .sources import REGISTRY
 from .store import Store
@@ -82,6 +83,7 @@ def main(argv: list[str] | None = None) -> int:
     # keep the run summary visible even without -v
     logging.getLogger("pandora").setLevel(logging.INFO)
 
+    print_banner()
     cfg = load_config(args.config)
 
     if not args.loop:

@@ -90,18 +90,12 @@ def crtsh(cfg: dict) -> list[Finding]:
     return out
 
 
-@source("search_dorks", modes=("surface",), key_of="serpapi_key")
-def search_dorks(cfg: dict) -> list[Finding]:
-    """Run leak-focused search queries via SerpAPI (google engine).
+def _dork_queries(cfg: dict) -> list[str]:
+    """Leak-focused search queries shared by every search-engine source.
 
-    Swap the provider block below if you prefer Brave Search API or Google CSE.
-    Dorks target paste sites, public buckets, doc-sharing, and code hosts.
+    Targets paste sites, public cloud buckets, doc-sharing, and looks for your
+    domain next to credential words or in data-file types.
     """
-    key = cfg.get("serpapi_key")
-    if not key:
-        return []
-    out: list[Finding] = []
-    sess = _http()
     org = cfg.get("org_name", "")
     domains = cfg.get("domains", [])
     dork_targets = cfg.get("dork_sites", [
@@ -119,8 +113,109 @@ def search_dorks(cfg: dict) -> list[Finding]:
         queries.append(f'"{dom}"')
         queries.append(f'"@{dom}" (password OR passwd OR login OR credentials)')
         queries.append(f'intext:"{dom}" (filetype:xlsx OR filetype:csv OR filetype:sql)')
+    return queries
 
-    for q in queries:
+
+@source("search_brave", modes=("surface",), key_of="brave_key")
+def search_brave(cfg: dict) -> list[Finding]:
+    """Run the leak dorks through the Brave Search API.
+
+    Brave has its own independent index and a genuinely free tier
+    (~2,000 queries/month), so this gives you dork-based leak hunting without
+    paying for SerpAPI. Free tier is rate-limited to ~1 query/sec.
+    """
+    key = cfg.get("brave_key")
+    if not key:
+        return []
+    out: list[Finding] = []
+    sess = _http()
+    sess.headers.update({"X-Subscription-Token": key,
+                         "Accept": "application/json"})
+    for q in _dork_queries(cfg):
+        try:
+            r = sess.get("https://api.search.brave.com/res/v1/web/search",
+                         params={"q": q, "count": 20}, timeout=UA_TIMEOUT)
+            if r.status_code == 429:
+                log.warning("brave: rate-limited, backing off")
+                time.sleep(5)
+                continue
+            r.raise_for_status()
+            for res in r.json().get("web", {}).get("results", []):
+                url = res.get("url", "")
+                blob = (res.get("title", "") + res.get("description", "") + url).lower()
+                out.append(Finding(
+                    source="search_brave", mode="surface",
+                    title=res.get("title", url)[:200],
+                    url=url,
+                    snippet=res.get("description", "")[:400],
+                    matched_terms=[t for t in _terms(cfg) if t.lower() in blob],
+                    severity="medium",
+                    raw={"query": q}))
+        except Exception as e:  # noqa: BLE001
+            log.warning("brave search failed (%s): %s", q, e)
+        time.sleep(1.2)  # respect free-tier 1 req/sec
+    return out
+
+
+@source("search_google_cse", modes=("surface",), key_of="google_api_key")
+def search_google_cse(cfg: dict) -> list[Finding]:
+    """Run the leak dorks through Google Programmable Search (Custom Search JSON API).
+
+    FREE with NO credit card: 100 queries/day. You need two values in config —
+    `google_api_key` (from a Google Cloud project with the "Custom Search API"
+    enabled) and `google_cse_cx` (the Search engine ID from
+    programmablesearchengine.google.com, set to "Search the entire web").
+    Each dork = 1 query, so keep keywords/dork_sites tight to stay under 100/day.
+    """
+    key = cfg.get("google_api_key")
+    cx = cfg.get("google_cse_cx")
+    if not key:
+        return []
+    if not cx:
+        log.warning("google_cse: 'google_api_key' set but 'google_cse_cx' missing — skipping")
+        return []
+    out: list[Finding] = []
+    sess = _http()
+    for q in _dork_queries(cfg):
+        try:
+            r = sess.get("https://www.googleapis.com/customsearch/v1",
+                         params={"key": key, "cx": cx, "q": q, "num": 10},
+                         timeout=UA_TIMEOUT)
+            if r.status_code == 429:
+                log.warning("google_cse: daily quota reached (100/day) — stopping this run")
+                break
+            r.raise_for_status()
+            for res in r.json().get("items", []):
+                url = res.get("link", "")
+                blob = (res.get("title", "") + res.get("snippet", "") + url).lower()
+                out.append(Finding(
+                    source="search_google_cse", mode="surface",
+                    title=res.get("title", url)[:200],
+                    url=url,
+                    snippet=res.get("snippet", "")[:400],
+                    matched_terms=[t for t in _terms(cfg) if t.lower() in blob],
+                    severity="medium",
+                    raw={"query": q}))
+        except Exception as e:  # noqa: BLE001
+            log.warning("google_cse search failed (%s): %s", q, e)
+        time.sleep(0.7)
+    return out
+
+
+@source("search_dorks", modes=("surface",), key_of="serpapi_key")
+def search_dorks(cfg: dict) -> list[Finding]:
+    """Run leak-focused search queries via SerpAPI (google engine).
+
+    Swap the provider block below if you prefer Brave Search API or Google CSE.
+    Dorks target paste sites, public buckets, doc-sharing, and code hosts.
+    """
+    key = cfg.get("serpapi_key")
+    if not key:
+        return []
+    out: list[Finding] = []
+    sess = _http()
+
+    for q in _dork_queries(cfg):
         try:
             r = sess.get("https://serpapi.com/search.json",
                          params={"engine": "google", "q": q, "num": 20, "api_key": key},
