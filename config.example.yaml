@@ -33,6 +33,7 @@ keywords:                                # optional extra strings
 # --- where output goes ----------------------------------------------
 state_dir: "state"        # dedupe state (per mode) lives here
 report_dir: "reports"     # markdown + json reports written here
+# min_severity: "medium"   # only report findings at/above this level (hides name-only noise). CLI --min-severity overrides.
 
 # Repos to confirm for live secrets with gitleaks (free, needs gitleaks CLI + git).
 # List your own org repos, or any public repo the github source flagged.
@@ -54,6 +55,15 @@ hibp_key: ""              # Have I Been Pwned (surface; needs domain verificatio
 leakcheck_key: ""         # LeakCheck.io (surface credential leaks); DeHashed is a swap
 intelx_key: ""            # Intelligence X (surface + dark). Best single dark-web source for a buyer.
 intelx_base: "https://2.intelx.io"
+
+# --- Telegram leak-channel search (dark mode) -----------------------
+# Needs telethon (pip install telethon) + your own free API creds from
+# https://my.telegram.org. One-time login: python -m pandora.telegram_login --config config.yaml
+# Use a DEDICATED account, not your personal number. Session file = account access.
+telegram_api_id: 0        # integer api_id from my.telegram.org
+telegram_api_hash: ""     # api_hash from my.telegram.org
+telegram_session: "state/tg.session"
+telegram_channels: []     # channels/usernames YOU choose to monitor, e.g. ["somechannel"]
 
 # --- optional alerting on NEW findings ------------------------------
 # webhook_url: "https://hooks.slack.com/services/XXX/YYY/ZZZ"   # or Teams/Discord/Mattermost

@@ -15,6 +15,7 @@ IMPORTANT: point these only at your OWN organisation's name / domain / keywords.
 from __future__ import annotations
 
 import logging
+import re
 import time
 from typing import Callable
 
@@ -53,6 +54,54 @@ def _http() -> requests.Session:
 
 
 UA_TIMEOUT = 20
+
+
+# ---- severity scoring for code / search hits --------------------------------
+# A bare mention of a common org name is noise; a domain inside a secret or data
+# file is a real exposure. These patterns grade a hit by WHERE the match is,
+# instead of stamping everything HIGH.
+_SENSITIVE_FILE = re.compile(
+    r'(?:^|[./_-])(?:\.env|env\.|dotenv|secret|secrets|credential|credentials|'
+    r'id_rsa|\.pem|\.key|\.pfx|\.p12|\.kdbx|\.ppk|\.ovpn|\.pgpass|htpasswd|'
+    r'\.git-credentials|\.npmrc|\.dockercfg|wp-config|web\.config|appsettings)', re.I)
+_SECRETY_WORD = re.compile(
+    r'(?:password|passwd|secret|token|api[_-]?key|apikey|access[_-]?key|'
+    r'client[_-]?secret|private[_-]?key|connection[_-]?string|aws_)', re.I)
+_CONFIG_EXT = re.compile(
+    r'\.(?:json|ya?ml|xml|ini|conf|cfg|config|properties|toml|env|tfvars)(?:$|[?#/\s])', re.I)
+_DATA_EXT = re.compile(
+    r'\.(?:sql|bak|dump|csv|tsv|xlsx?|parquet|db|sqlite3?|mdb)(?:$|[?#/\s])', re.I)
+_DOC_EXT = re.compile(r'\.(?:md|rst|txt|tex|bib|adoc|pdf)(?:$|[?#/\s])', re.I)
+_DOC_NAME = re.compile(
+    r'(?:readme|contributing|governance|licen[sc]e|code_of_conduct|changelog|'
+    r'authors|contributors|notice|roadmap|\bfaq\b|\busers\b|\bdocs?/)', re.I)
+_NOISE_REPO = re.compile(
+    r'(?:interview|awesome|questions|compan(?:y|ies)|career|\bjobs\b|logos?|'
+    r'vectorlogo|curriculum|cheat[-_ ]?sheet|list[-_]of|tutorial|example|'
+    r'\bdemo\b|/paper|vocabulary|roadmap|courses?|study|learn)', re.I)
+
+
+def score_hit(location: str, is_domain: bool) -> tuple[str, str]:
+    """Grade a code/search hit -> (severity, reason).
+
+    `location` is "owner/repo/path" (code) or a URL (search). `is_domain` is
+    True when the matched term was one of your domains (far stronger signal
+    than a bare org-name mention).
+    """
+    loc = location.lower()
+    if _SENSITIVE_FILE.search(loc) or _SECRETY_WORD.search(loc):
+        return ("critical" if is_domain else "high", "secret/credential file indicator")
+    if _CONFIG_EXT.search(loc) or _DATA_EXT.search(loc):
+        return ("high" if is_domain else "medium", "config/data file")
+    if _NOISE_REPO.search(loc):
+        return ("info", "list / interview-prep / example repo")
+    if _DOC_EXT.search(loc) or _DOC_NAME.search(loc):
+        return ("low" if is_domain else "info", "documentation / README mention")
+    return ("medium" if is_domain else "low", "generic code/page reference")
+
+
+def _is_domain(term: str, cfg: dict) -> bool:
+    return term.lower() in {d.lower() for d in cfg.get("domains", [])}
 
 
 # ---- SURFACE WEB sources ----------------------------------------------------
@@ -248,14 +297,16 @@ def search_brave(cfg: dict) -> list[Finding]:
             for res in r.json().get("web", {}).get("results", []):
                 url = res.get("url", "")
                 blob = (res.get("title", "") + res.get("description", "") + url).lower()
+                dmatch = any(d.lower() in blob for d in cfg.get("domains", []))
+                sev, reason = score_hit(url, dmatch)
                 out.append(Finding(
                     source="search_brave", mode="surface",
                     title=res.get("title", url)[:200],
                     url=url,
-                    snippet=res.get("description", "")[:400],
+                    snippet=res.get("description", "")[:340] + f" — {reason}",
                     matched_terms=[t for t in _terms(cfg) if t.lower() in blob],
-                    severity="medium",
-                    raw={"query": q}))
+                    severity=sev,
+                    raw={"query": q, "score_reason": reason}))
         except Exception as e:  # noqa: BLE001
             log.warning("brave search failed (%s): %s", q, e)
         time.sleep(1.2)  # respect free-tier 1 req/sec
@@ -293,14 +344,16 @@ def search_google_cse(cfg: dict) -> list[Finding]:
             for res in r.json().get("items", []):
                 url = res.get("link", "")
                 blob = (res.get("title", "") + res.get("snippet", "") + url).lower()
+                dmatch = any(d.lower() in blob for d in cfg.get("domains", []))
+                sev, reason = score_hit(url, dmatch)
                 out.append(Finding(
                     source="search_google_cse", mode="surface",
                     title=res.get("title", url)[:200],
                     url=url,
-                    snippet=res.get("snippet", "")[:400],
+                    snippet=res.get("snippet", "")[:340] + f" — {reason}",
                     matched_terms=[t for t in _terms(cfg) if t.lower() in blob],
-                    severity="medium",
-                    raw={"query": q}))
+                    severity=sev,
+                    raw={"query": q, "score_reason": reason}))
         except Exception as e:  # noqa: BLE001
             log.warning("google_cse search failed (%s): %s", q, e)
         time.sleep(0.7)
@@ -328,15 +381,17 @@ def search_dorks(cfg: dict) -> list[Finding]:
             r.raise_for_status()
             for res in r.json().get("organic_results", []):
                 url = res.get("link", "")
+                blob = (res.get("title", "") + res.get("snippet", "") + url).lower()
+                dmatch = any(d.lower() in blob for d in cfg.get("domains", []))
+                sev, reason = score_hit(url, dmatch)
                 out.append(Finding(
                     source="search_dorks", mode="surface",
                     title=res.get("title", url)[:200],
                     url=url,
-                    snippet=res.get("snippet", "")[:400],
-                    matched_terms=[t for t in _terms(cfg) if t.lower() in
-                                   (res.get("title", "") + res.get("snippet", "") + url).lower()],
-                    severity="medium",
-                    raw={"query": q}))
+                    snippet=res.get("snippet", "")[:340] + f" — {reason}",
+                    matched_terms=[t for t in _terms(cfg) if t.lower() in blob],
+                    severity=sev,
+                    raw={"query": q, "score_reason": reason}))
         except Exception as e:  # noqa: BLE001
             log.warning("search dork failed (%s): %s", q, e)
         time.sleep(1.5)
@@ -345,7 +400,8 @@ def search_dorks(cfg: dict) -> list[Finding]:
 
 @source("github", modes=("surface",), key_of="github_token")
 def github(cfg: dict) -> list[Finding]:
-    """GitHub code search for your domain/keywords (leaked configs, creds, dumps)."""
+    """GitHub code search for your domain/keywords. Each hit is severity-scored by
+    file type/path (README/interview-prep -> info; .env/config/.sql -> high/critical)."""
     token = cfg.get("github_token")
     if not token:
         return []
@@ -365,13 +421,15 @@ def github(cfg: dict) -> list[Finding]:
             r.raise_for_status()
             for item in r.json().get("items", []):
                 repo = item.get("repository", {}).get("full_name", "")
+                path = item.get("path", "")
+                sev, reason = score_hit(f"{repo}/{path}", _is_domain(term, cfg))
                 out.append(Finding(
                     source="github", mode="surface",
-                    title=f"{repo}/{item.get('path','')}",
+                    title=f"{repo}/{path}",
                     url=item.get("html_url", ""),
-                    snippet=f"'{term}' referenced in public code.",
-                    matched_terms=[term], severity="high",
-                    raw={"repo": repo, "path": item.get("path")}))
+                    snippet=f"'{term}' in public code — {reason}.",
+                    matched_terms=[term], severity=sev,
+                    raw={"repo": repo, "path": path, "score_reason": reason}))
         except Exception as e:  # noqa: BLE001
             log.warning("github search failed (%s): %s", term, e)
         time.sleep(3)  # GitHub code search is heavily rate-limited
@@ -716,4 +774,80 @@ def psbdmp(cfg: dict) -> list[Finding]:
         except Exception as e:  # noqa: BLE001
             log.warning("psbdmp failed (%s): %s", term, e)
         time.sleep(1.5)
+    return out
+
+
+@source("telegram", modes=("dark",), key_of=None)
+def telegram(cfg: dict) -> list[Finding]:
+    """Search the message history of chosen Telegram channels for your org terms.
+
+    Telegram has no free keyless "search all channels" API. This uses the Telegram
+    Client API (MTProto) via Telethon, logged in as a USER account with YOUR OWN
+    free credentials (api_id/api_hash from https://my.telegram.org). It searches
+    the channels you list in `telegram_channels` for your org name/domains/keywords.
+
+    One-time setup (see README):
+      1. pip install telethon
+      2. set telegram_api_id / telegram_api_hash / telegram_channels in config
+      3. python -m pandora.telegram_login --config config.yaml   (interactive login)
+
+    SAFETY: use a DEDICATED Telegram account, not your personal number. Joining
+    unknown channels carries risk (malware links, bans, illegal content). You
+    choose which channels to monitor; this source never auto-joins or discovers
+    channels for you. The session file is account access — keep it out of git
+    (it lives under state/, which is git-ignored).
+    """
+    api_id = cfg.get("telegram_api_id")
+    api_hash = cfg.get("telegram_api_hash")
+    channels = cfg.get("telegram_channels", [])
+    if not (api_id and api_hash and channels):
+        return []  # not configured -> silent skip
+    try:
+        from telethon.sync import TelegramClient  # noqa: F401
+    except ImportError:
+        log.info("telegram: telethon not installed; skip (pip install telethon)")
+        return []
+
+    import asyncio
+    from telethon.sync import TelegramClient
+
+    session = cfg.get("telegram_session", "state/tg.session")
+    terms = _terms(cfg)
+    collected: list[tuple] = []
+
+    async def _run():
+        client = TelegramClient(session, int(api_id), api_hash)
+        await client.connect()
+        try:
+            if not await client.is_user_authorized():
+                log.warning("telegram: not logged in. Run one-time login: "
+                            "python -m pandora.telegram_login --config <your config>")
+                return
+            for ch in channels:
+                for term in terms:
+                    try:
+                        async for msg in client.iter_messages(ch, search=term, limit=20):
+                            collected.append((ch, term, msg))
+                    except Exception as e:  # noqa: BLE001
+                        log.warning("telegram: search failed in %s (%s): %s", ch, term, e)
+        finally:
+            await client.disconnect()
+
+    try:
+        asyncio.run(_run())
+    except Exception as e:  # noqa: BLE001
+        log.warning("telegram: client error: %s", e)
+        return []
+
+    out: list[Finding] = []
+    for ch, term, msg in collected:
+        handle = str(ch).lstrip("@")
+        text = (getattr(msg, "message", "") or "").replace("\n", " ")[:300]
+        out.append(Finding(
+            source="telegram", mode="dark",
+            title=f"Telegram mention in @{handle} — '{term}'",
+            url=f"https://t.me/{handle}/{getattr(msg, 'id', '')}",
+            snippet=text, matched_terms=[term], severity="high",
+            raw={"channel": handle, "message_id": getattr(msg, "id", None),
+                 "date": str(getattr(msg, "date", ""))}))
     return out

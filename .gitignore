@@ -17,3 +17,8 @@ __pycache__/
 .vscode/
 .idea/
 .DS_Store
+
+config.*.yaml
+config.*.yml
+config_*.yaml
+!config.example.yaml

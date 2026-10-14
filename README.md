@@ -48,7 +48,7 @@ Two run modes, each hitting a different set of sources:
 | Mode | Sources |
 |------|---------|
 | `surface` | **crt.sh** (assets/subdomains), **Shodan** (exposed hosts/services), **dnstwist** (look-alike domains), **GitHub** code search, search dorks (**Brave** / **Google CSE** / SerpAPI), **Have I Been Pwned**, **LeakCheck/DeHashed**, **Intelligence X** |
-| `dark` | **Ahmia** (Tor index), **psbdmp** (paste dumps), **Intelligence X** (dark/breach buckets) |
+| `dark` | **Ahmia** (Tor index), **psbdmp** (paste dumps), **Telegram** (channels you monitor), **Intelligence X** (dark/breach buckets) |
 
 - **Only-new reporting** — persistent state means a repeat finding is tracked
   silently; a brand-new one is what surfaces and alerts.
@@ -127,6 +127,29 @@ Key reference:
 | `hibp_key` | hibp | subscription |
 | `leakcheck_key` | leakcheck | paid |
 | `intelx_key` | intelx | paid |
+
+### Telegram leak-channel search (optional, dark mode)
+
+Telegram has no free keyless search API, so this source uses Telethon logged in as a **user account** with your own free credentials:
+
+```bash
+pip install telethon
+# set telegram_api_id / telegram_api_hash (from https://my.telegram.org)
+# and telegram_channels: [...]  in config.yaml, then log in once:
+python -m pandora.telegram_login --config config.yaml
+```
+
+Then dark runs will search those channels. **Use a dedicated account, not your personal number**; you choose which channels to monitor (the tool never auto-joins or discovers channels). The session file under `state/` is account access — keep it private (it's git-ignored).
+
+### Severity scoring
+
+Findings are graded by **where** the match is, not stamped `HIGH` blindly. A bare org-name mention in a README, interview-prep repo, or company list scores `info`; a domain inside a `.env`, config, `.sql`, or credentials file scores `high`/`critical`. Hide the noise with a floor:
+
+```bash
+python -m pandora --config config.yaml --mode surface --min-severity medium
+```
+
+State still records everything (so nothing re-alerts); the filter only affects what's reported. Set a permanent floor with `min_severity:` in config.
 
 ## Usage
 
@@ -215,7 +238,7 @@ Register the key in `config.example.yaml` and it appears automatically.
 
 - [x] Brave Search source (free alternative to SerpAPI dorks)
 - [x] gitleaks pass to confirm whether a code hit is a *live* secret
-- [ ] Telegram channel search (a major hub for leak & breach chatter)
+- [x] Telegram channel search (Telethon, user-supplied channels)
 - [ ] Automated tests + CI
 - [ ] theHarvester + Amass asset-discovery sources
 - [ ] Commercial dark-web feed adapter (SpyCloud / Flare / Cybersixgill)

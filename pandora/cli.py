@@ -59,6 +59,19 @@ def run_once(cfg: dict, mode: str) -> int:
     store.save()
     total = [f for f in store.all_findings() if f.mode == mode]
 
+    # severity filter for what gets reported/alerted (state still stores all)
+    from .model import SEVERITY_ORDER
+    floor = cfg.get("_min_severity") or cfg.get("min_severity") or "info"
+    cutoff = SEVERITY_ORDER.get(floor, 4)
+    if cutoff < 4:  # 4 == info == show everything
+        kept_new = [f for f in new if SEVERITY_ORDER.get(f.severity, 4) <= cutoff]
+        kept_total = [f for f in total if SEVERITY_ORDER.get(f.severity, 4) <= cutoff]
+        hidden = len(new) - len(kept_new)
+        if hidden:
+            log.info("min-severity '%s': hiding %d lower-severity new finding(s)",
+                     floor, hidden)
+        new, total = kept_new, kept_total
+
     md = write_reports(mode, cfg.get("report_dir", "reports"), new, total)
     console_summary(mode, new, total)
     notify(cfg, mode, new)
@@ -82,6 +95,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--max-queries", type=int, default=None, metavar="N",
                    help="hard cap on total dork queries this run (protects free-tier "
                         "quota); overrides max_queries_per_run in config")
+    p.add_argument("--min-severity", choices=["info", "low", "medium", "high", "critical"],
+                   default=None, metavar="LEVEL",
+                   help="only report findings at or above this severity "
+                        "(e.g. 'medium' hides name-only noise); default shows all")
     p.add_argument("--list-dorks", action="store_true",
                    help="print the dork categories and exact queries that would "
                         "run for your config, then exit")
@@ -124,6 +141,8 @@ def main(argv: list[str] | None = None) -> int:
         p.error("--mode is required (surface or dark) unless using --list-dorks")
 
     cfg["_dork"] = args.dork  # selected dork category for search sources
+    if args.min_severity:
+        cfg["_min_severity"] = args.min_severity
 
     if not args.loop:
         run_once(cfg, args.mode)
